@@ -58,6 +58,27 @@ int disassemble8080Op(unsigned char *codebuffer, int pc) {
     return opbytes;    
 }
 
+void readFileIntoMemoryAt(State8080* state, char* filename, uint32_t offset) {
+	FILE *f= fopen(filename, "rb");
+	if (f==NULL) {
+		printf("error: Couldn't open %s\n", filename);
+		exit(1);
+	}
+	fseek(f, 0L, SEEK_END);
+	int fsize = ftell(f);
+	fseek(f, 0L, SEEK_SET);
+
+	uint8_t *buffer = &state->memory[offset];
+	fread(buffer, fsize, 1, f);
+	fclose(f);
+}
+
+State8080* init8080(void) {
+	State8080* state = calloc(1, sizeof(State8080));
+	state->memory = malloc(0x10000);  //16K
+	return state;
+}
+
 int main (int argc, char**argv) {    
     FILE *f= fopen(argv[1], "rb");    
     
@@ -66,21 +87,12 @@ int main (int argc, char**argv) {
         exit(1);
     }
 
-    //Get the file size and read it into a memory buffer    
-    fseek(f, 0L, SEEK_END);    
-    int fsize = ftell(f);    
-    fseek(f, 0L, SEEK_SET);    
+    State8080* state = init8080();
 
-    unsigned char *buffer = malloc(fsize);    
-
-    fread(buffer, fsize, 1, f);    
-    fclose(f);    
-
-    int pc = 0;    
-
-    while (pc < fsize) {    
-        pc += disassemble8080Op(buffer, pc);    
-    }
+    readFileIntoMemoryAt(state, "invaders.h", 0);
+	readFileIntoMemoryAt(state, "invaders.g", 0x800);
+	readFileIntoMemoryAt(state, "invaders.f", 0x1000);
+	readFileIntoMemoryAt(state, "invaders.e", 0x1800);
 
     return 0;    
 }
