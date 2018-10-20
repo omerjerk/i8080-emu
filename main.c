@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <sys/time.h>
 
 typedef struct ConditionCodes {
     uint8_t    z:1;
@@ -34,7 +35,7 @@ typedef struct State8080 {
     uint16_t   pc;
     uint8_t    *memory;
     struct     ConditionCodes      cc;
-	struct      Ports               port;
+	struct      Ports              port;
     uint8_t    int_enable;
 } State8080;
 
@@ -2159,6 +2160,23 @@ int emulate8080(State8080* state) {
     return 1;
 }
 
+void push(State8080 *state, uint8_t msbReg, uint8_t lsbReg) {
+	state->memory[state->sp - 1] = msbReg;
+	state->memory[state->sp - 2] = lsbReg;
+
+	state->sp -= 2;
+}
+
+void generateInterrupt(State8080 *state, int interrupt_num) {
+	//Push PC
+	push(state, ((state->pc & 0xff00) >> 8), (state->pc & 0xff));
+
+	//Set PC to low memory vector
+	//RST interrupt_num
+	state->pc = 8 * interrupt_num;
+	state->int_enable = 0;
+}
+
 void readFileIntoMemoryAt(State8080* state, char* filename, uint32_t offset) {
     FILE *f= fopen(filename, "rb");
     if (f==NULL) {
@@ -2180,6 +2198,15 @@ State8080* init8080(void) {
     return state;
 }
 
+//Returns time in microseconds
+double timeusec() {
+    //get time
+    struct timeval currentTime;
+    gettimeofday(&currentTime, NULL);
+    //convert from seconds to microseconds
+    return ((double)currentTime.tv_sec * 1E6) + ((double)currentTime.tv_usec);
+}
+
 int main (int argc, char**argv) {
 
     State8080* state = init8080();
@@ -2189,7 +2216,31 @@ int main (int argc, char**argv) {
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.f", 0x1000);
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.e", 0x1800);
 
-    while (emulate8080(state));
+    int done = 0;
+	double now;
+	int whichInt = 1;
+	double lastInterrupt = 0.0;
+	while (done == 0)
+    {
+        done = emulate8080(state);
+
+		now = timeusec();
+        if ( now - lastInterrupt > 16667) // 1/60 seconds has elapsed
+        {
+            // only do an interrupt if they are enabled
+            if (state->int_enable) {
+				if (whichInt == 1) {
+					whichInt = 2;
+				}
+				if (whichInt == 2) {
+					whichInt = 1;
+				}
+				generateInterrupt(state, whichInt); // Interrupt 2
+                // Save the time we did this
+                lastInterrupt = now;
+            }
+        }
+    }
 
     return 0;
 }
