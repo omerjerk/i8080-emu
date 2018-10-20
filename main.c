@@ -391,10 +391,6 @@ int emulate8080(State8080* state) {
 
     state->pc += 1;
 
-    if (state->pc > (0x1800/0x6)) {
-        return 0;
-    }
-
     switch(*opcode) {
         case 0x00: // NOP
             break;
@@ -2216,11 +2212,11 @@ int main (int argc, char**argv) {
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.f", 0x1000);
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.e", 0x1800);
 
-    int done = 0;
+    int done = 1;
 	double now;
 	int whichInt = 1;
 	double lastInterrupt = 0.0;
-	while (done == 0)
+	while (done == 1)
     {
         done = emulate8080(state);
 
