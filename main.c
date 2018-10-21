@@ -41,26 +41,26 @@ double timeusec() {
 }
 
 void* emulatorThreadFun(void* arg) {
-	State8080* state = (State8080*) arg;
+    State8080* state = (State8080*) arg;
 
-	int done = 1;
-	double now;
-	int whichInt = 1;
-	double lastInterrupt = 0.0;
-	while (done == 1) {
+    int done = 1;
+    double now;
+    int whichInt = 1;
+    double lastInterrupt = 0.0;
+    while (done == 1) {
         done = emulate8080(state);
-		now = timeusec();
+        now = timeusec();
         if ( now - lastInterrupt > 16667) // 1/60 seconds has elapsed
         {
             // only do an interrupt if they are enabled
             if (state->int_enable) {
-				if (whichInt == 1) {
-					whichInt = 2;
-				}
-				if (whichInt == 2) {
-					whichInt = 1;
-				}
-				generateInterrupt(state, 2); // Interrupt 2
+                if (whichInt == 1) {
+                    whichInt = 2;
+                }
+                if (whichInt == 2) {
+                    whichInt = 1;
+                }
+                generateInterrupt(state, 2); // Interrupt 2
                 // Save the time we did this
                 lastInterrupt = now;
             }
@@ -75,84 +75,84 @@ static void bw_to_rgb(guchar *rgb, guchar *bw, size_t sz) {
 }
 
 typedef struct wrap {
-	GtkImage* image;
-	State8080* state;
+    GtkImage* image;
+    State8080* state;
 } Wrap;
 
 gboolean
 derp (gpointer data) {
 
-	Wrap* w = data;
-	guchar bw[ROWS * COLS] = { 0 };
+    Wrap* w = data;
+    guchar bw[ROWS * COLS] = { 0 };
 
-	for (int r = 0; r < ROWS; r++)
+    for (int r = 0; r < ROWS; r++)
         for (int j = 0; j < 32; j++) {
-			for (int k = 0; k < 8; ++k) {
-				bw[(r * COLS + j) + k + (j * 8)] = (w->state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
-			}
+            for (int k = 0; k < 8; ++k) {
+                bw[(r * COLS + j) + k + (j * 8)] = (w->state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
+            }
             // bw[r * COLS + c] = rand() %2 ? 0: 255;
-		}
+        }
 
-	guchar rbw[ROWS * COLS] = {0};
-	for (int i = 0; i < COLS; ++i) {
-	    for (int j = 0; j < ROWS; ++j) {
-			rbw[(i * ROWS) + j] = bw[(j * COLS) + (ROWS - i)];
-		}
-	}
+    guchar rbw[ROWS * COLS] = {0};
+    for (int i = 0; i < COLS; ++i) {
+        for (int j = 0; j < ROWS; ++j) {
+            rbw[(i * ROWS) + j] = bw[(j * COLS) + (ROWS - i)];
+        }
+    }
 
-	guchar rgb[sizeof bw * BYTES_PER_PIXEL];
-	bw_to_rgb(rgb, rbw, ROWS * COLS);
+    guchar rgb[sizeof bw * BYTES_PER_PIXEL];
+    bw_to_rgb(rgb, rbw, ROWS * COLS);
 
-	GdkPixbuf *pb = gdk_pixbuf_new_from_data(
-    	rgb,
-    	GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
-    	0,                      // has_alpha (0 for no alpha)
-    	8,                      // bits-per-sample (must be 8)
-    	ROWS, COLS,             // cols, rows
-    	ROWS * BYTES_PER_PIXEL, // rowstride
-    	NULL, NULL              // destroy_fn, destroy_fn_data
+    GdkPixbuf *pb = gdk_pixbuf_new_from_data(
+        rgb,
+        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
+        0,                      // has_alpha (0 for no alpha)
+        8,                      // bits-per-sample (must be 8)
+        ROWS, COLS,             // cols, rows
+        ROWS * BYTES_PER_PIXEL, // rowstride
+        NULL, NULL              // destroy_fn, destroy_fn_data
     );
 
-	gtk_image_set_from_pixbuf(w->image, pb);
+    gtk_image_set_from_pixbuf(w->image, pb);
 
-  	/* Return true so the function will be called again; returning false removes
-   	* this timeout function.
-   	*/
-  	return TRUE;
+      /* Return true so the function will be called again; returning false removes
+       * this timeout function.
+       */
+      return TRUE;
 }
 
 static void
 activate (GtkApplication* app, gpointer user_data) {
-  	GtkWidget *window;
-	State8080* state = user_data; // start all black
-	
-	Wrap* w = (Wrap*) malloc(sizeof(Wrap));
+      GtkWidget *window;
+    State8080* state = user_data; // start all black
+    
+    Wrap* w = (Wrap*) malloc(sizeof(Wrap));
     w->state = state;
 
-	guchar bw[ROWS * COLS] = { 0 };
-	for (int r = 0; r < ROWS; r++)
+    guchar bw[ROWS * COLS] = { 0 };
+    for (int r = 0; r < ROWS; r++)
         for (int c = 0; c < COLS; c++) {
             //bw[r * COLS + c] = state->memory[0x2400 + (r * COLS + c)];
-			bw[r * COLS + c] = w->state->memory[0x2400 + ((r * COLS) + c)] == 1 ? 255:0;
-		}
+            bw[r * COLS + c] = w->state->memory[0x2400 + ((r * COLS) + c)] == 1 ? 255:0;
+        }
 
-	guchar rgb[sizeof bw * BYTES_PER_PIXEL];
-	bw_to_rgb(rgb, bw, ROWS * COLS);
+    guchar rgb[sizeof bw * BYTES_PER_PIXEL];
+    bw_to_rgb(rgb, bw, ROWS * COLS);
 
-	GdkPixbuf *pb = gdk_pixbuf_new_from_data(
-    	rgb,
-    	GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
-    	0,                      // has_alpha (0 for no alpha)
-    	8,                      // bits-per-sample (must be 8)
-    	COLS, ROWS,             // cols, rows
-    	COLS * BYTES_PER_PIXEL, // rowstride
-    	NULL, NULL              // destroy_fn, destroy_fn_data
+    GdkPixbuf *pb = gdk_pixbuf_new_from_data(
+        rgb,
+        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
+        0,                      // has_alpha (0 for no alpha)
+        8,                      // bits-per-sample (must be 8)
+        COLS, ROWS,             // cols, rows
+        COLS * BYTES_PER_PIXEL, // rowstride
+        NULL, NULL              // destroy_fn, destroy_fn_data
     );
 
-	GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(pb);
-	w->image = image;
+    GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(pb);
+    w->image = image;
 
-	g_timeout_add(100, derp, w);
+    g_timeout_add(100, derp, w);
 
     window = gtk_application_window_new (app);
     gtk_window_set_title (GTK_WINDOW (window), "Window");
