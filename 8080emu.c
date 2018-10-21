@@ -349,7 +349,7 @@ static void machineOUT(State8080* state, uint8_t port) {
 int emulate8080(State8080* state) {
     unsigned char *opcode = &state->memory[state->pc];
 
-	disassemble8080Op(opcode, state->pc);
+	// disassemble8080Op(opcode, state->pc);
 
     state->pc += 1;
 

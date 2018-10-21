@@ -6,8 +6,8 @@
 
 #include "8080emu.h"
 
-#define ROWS 256
-#define COLS 224
+#define COLS 256
+#define ROWS 224
 #define BYTES_PER_PIXEL 3
 
 void readFileIntoMemoryAt(State8080* state, char* filename, uint32_t offset) {
@@ -60,7 +60,7 @@ void* emulatorThreadFun(void* arg) {
 				if (whichInt == 2) {
 					whichInt = 1;
 				}
-				generateInterrupt(state, whichInt); // Interrupt 2
+				generateInterrupt(state, 2); // Interrupt 2
                 // Save the time we did this
                 lastInterrupt = now;
             }
@@ -86,10 +86,19 @@ derp (gpointer data) {
 	guchar bw[ROWS * COLS] = { 0 };
 
 	for (int r = 0; r < ROWS; r++)
-        for (int c = 0; c < COLS; c++) {
-            //bw[r * COLS + c] = state->memory[0x2400 + (r * COLS + c)];
-			bw[r * COLS + c] = w->state->memory[0x2400 + ((r * COLS) + c)];
+        for (int j = 0; j < 32; j++) {
+			for (int k = 0; k < 8; ++k) {
+				bw[(r * COLS + j) + k + (j * 8)] = (w->state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
+			}
+            // bw[r * COLS + c] = rand() %2 ? 0: 255;
 		}
+
+	guchar rbw[ROWS * COLS] = {0};
+	for (int i = 0; i < COLS; ++i) {
+	    for (int j = 0; j < ROWS; ++j) {
+			rbw[i * COLS + j] = bw[(j * ROWS) + (COLS - i)];
+		}
+	}
 
 	guchar rgb[sizeof bw * BYTES_PER_PIXEL];
 	bw_to_rgb(rgb, bw, ROWS * COLS);
