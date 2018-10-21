@@ -6,6 +6,10 @@
 
 #include "8080emu.h"
 
+#define ROWS 256
+#define COLS 224
+#define BYTES_PER_PIXEL 3
+
 void readFileIntoMemoryAt(State8080* state, char* filename, uint32_t offset) {
     FILE *f= fopen(filename, "rb");
     if (f==NULL) {
@@ -64,14 +68,89 @@ void* emulatorThreadFun(void* arg) {
     }
 }
 
+static void bw_to_rgb(guchar *rgb, guchar *bw, size_t sz) {
+  for (size_t i = 0; i < sz; i++)
+    for (size_t j = 0; j < BYTES_PER_PIXEL; j++)
+      rgb[i * BYTES_PER_PIXEL + j] = bw[i];
+}
+
+typedef struct wrap {
+	GtkImage* image;
+	State8080* state;
+} Wrap;
+
+gboolean
+derp (gpointer data) {
+
+	Wrap* w = data;
+	guchar bw[ROWS * COLS] = { 0 };
+
+	for (int r = 0; r < ROWS; r++)
+        for (int c = 0; c < COLS; c++) {
+            //bw[r * COLS + c] = state->memory[0x2400 + (r * COLS + c)];
+			bw[r * COLS + c] = w->state->memory[0x2400 + ((r * COLS) + c)];
+		}
+
+	guchar rgb[sizeof bw * BYTES_PER_PIXEL];
+	bw_to_rgb(rgb, bw, ROWS * COLS);
+
+	GdkPixbuf *pb = gdk_pixbuf_new_from_data(
+    	rgb,
+    	GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
+    	0,                      // has_alpha (0 for no alpha)
+    	8,                      // bits-per-sample (must be 8)
+    	COLS, ROWS,             // cols, rows
+    	COLS * BYTES_PER_PIXEL, // rowstride
+    	NULL, NULL              // destroy_fn, destroy_fn_data
+    );
+
+	gtk_image_set_from_pixbuf(w->image, pb);
+
+  	/* Return true so the function will be called again; returning false removes
+   	* this timeout function.
+   	*/
+  	return TRUE;
+}
+
 static void
 activate (GtkApplication* app, gpointer user_data) {
-  GtkWidget *window;
+  	GtkWidget *window;
+	State8080* state = user_data; // start all black
+	
+	Wrap* w = (Wrap*) malloc(sizeof(Wrap));
+    w->state = state;
 
-  window = gtk_application_window_new (app);
-  gtk_window_set_title (GTK_WINDOW (window), "Window");
-  gtk_window_set_default_size (GTK_WINDOW (window), 200, 200);
-  gtk_widget_show_all (window);
+	guchar bw[ROWS * COLS] = { 0 };
+	for (int r = 0; r < ROWS; r++)
+        for (int c = 0; c < COLS; c++) {
+            //bw[r * COLS + c] = state->memory[0x2400 + (r * COLS + c)];
+			bw[r * COLS + c] = w->state->memory[0x2400 + ((r * COLS) + c)] == 1 ? 255:0;
+		}
+
+	guchar rgb[sizeof bw * BYTES_PER_PIXEL];
+	bw_to_rgb(rgb, bw, ROWS * COLS);
+
+	GdkPixbuf *pb = gdk_pixbuf_new_from_data(
+    	rgb,
+    	GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
+    	0,                      // has_alpha (0 for no alpha)
+    	8,                      // bits-per-sample (must be 8)
+    	COLS, ROWS,             // cols, rows
+    	COLS * BYTES_PER_PIXEL, // rowstride
+    	NULL, NULL              // destroy_fn, destroy_fn_data
+    );
+
+	GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(pb);
+	w->image = image;
+
+	g_timeout_add(100, derp, w);
+
+    window = gtk_application_window_new (app);
+    gtk_window_set_title (GTK_WINDOW (window), "Window");
+    gtk_window_set_default_size (GTK_WINDOW (window), 256, 224);
+    gtk_container_add(GTK_CONTAINER(window), (GtkWidget*) image);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    gtk_widget_show_all (window);
 }
 
 int main (int argc, char**argv) {
@@ -83,16 +162,16 @@ int main (int argc, char**argv) {
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.f", 0x1000);
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.e", 0x1800);
 
-	pthread_t thread_id;
-	pthread_create(&thread_id, NULL, emulatorThreadFun, state); 
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, emulatorThreadFun, state); 
 
-	GtkApplication *app;
+    GtkApplication *app;
     int status;
 
     app = gtk_application_new ("org.gtk.example", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
+    g_signal_connect (app, "activate", G_CALLBACK (activate), state);
     status = g_application_run (G_APPLICATION (app), argc, argv);
     g_object_unref (app);
-    
+
     return 0;
 }
