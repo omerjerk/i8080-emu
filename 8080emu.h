@@ -1,0 +1,1 @@
+int disassemble8080Op(unsigned char *code, int pc);
