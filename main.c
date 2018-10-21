@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <gtk/gtk.h>
+#include <pthread.h>
 
 #include "8080emu.h"
 
@@ -35,6 +36,34 @@ double timeusec() {
     return ((double)currentTime.tv_sec * 1E6) + ((double)currentTime.tv_usec);
 }
 
+void* emulatorThreadFun(void* arg) {
+	State8080* state = (State8080*) arg;
+
+	int done = 1;
+	double now;
+	int whichInt = 1;
+	double lastInterrupt = 0.0;
+	while (done == 1) {
+        done = emulate8080(state);
+		now = timeusec();
+        if ( now - lastInterrupt > 16667) // 1/60 seconds has elapsed
+        {
+            // only do an interrupt if they are enabled
+            if (state->int_enable) {
+				if (whichInt == 1) {
+					whichInt = 2;
+				}
+				if (whichInt == 2) {
+					whichInt = 1;
+				}
+				generateInterrupt(state, whichInt); // Interrupt 2
+                // Save the time we did this
+                lastInterrupt = now;
+            }
+        }
+    }
+}
+
 static void
 activate (GtkApplication* app, gpointer user_data) {
   GtkWidget *window;
@@ -54,6 +83,9 @@ int main (int argc, char**argv) {
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.f", 0x1000);
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.e", 0x1800);
 
+	pthread_t thread_id;
+	pthread_create(&thread_id, NULL, emulatorThreadFun, state); 
+
 	GtkApplication *app;
     int status;
 
@@ -61,32 +93,6 @@ int main (int argc, char**argv) {
     g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
     status = g_application_run (G_APPLICATION (app), argc, argv);
     g_object_unref (app);
-
-    int done = 1;
-	double now;
-	int whichInt = 1;
-	double lastInterrupt = 0.0;
-	while (done == 1)
-    {
-        done = emulate8080(state);
-
-		now = timeusec();
-        if ( now - lastInterrupt > 16667) // 1/60 seconds has elapsed
-        {
-            // only do an interrupt if they are enabled
-            if (state->int_enable) {
-				if (whichInt == 1) {
-					whichInt = 2;
-				}
-				if (whichInt == 2) {
-					whichInt = 1;
-				}
-				generateInterrupt(state, whichInt); // Interrupt 2
-                // Save the time we did this
-                lastInterrupt = now;
-            }
-        }
-    }
-
+    
     return 0;
 }
