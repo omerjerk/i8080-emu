@@ -96,20 +96,20 @@ derp (gpointer data) {
 	guchar rbw[ROWS * COLS] = {0};
 	for (int i = 0; i < COLS; ++i) {
 	    for (int j = 0; j < ROWS; ++j) {
-			rbw[i * COLS + j] = bw[(j * ROWS) + (COLS - i)];
+			rbw[(i * ROWS) + j] = bw[(j * COLS) + (ROWS - i)];
 		}
 	}
 
 	guchar rgb[sizeof bw * BYTES_PER_PIXEL];
-	bw_to_rgb(rgb, bw, ROWS * COLS);
+	bw_to_rgb(rgb, rbw, ROWS * COLS);
 
 	GdkPixbuf *pb = gdk_pixbuf_new_from_data(
     	rgb,
     	GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
     	0,                      // has_alpha (0 for no alpha)
     	8,                      // bits-per-sample (must be 8)
-    	COLS, ROWS,             // cols, rows
-    	COLS * BYTES_PER_PIXEL, // rowstride
+    	ROWS, COLS,             // cols, rows
+    	ROWS * BYTES_PER_PIXEL, // rowstride
     	NULL, NULL              // destroy_fn, destroy_fn_data
     );
 
