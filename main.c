@@ -1,43 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
 #include <sys/time.h>
+#include <gtk/gtk.h>
 
-typedef struct ConditionCodes {
-    uint8_t    z:1;
-    uint8_t    s:1;
-    uint8_t    p:1;
-    uint8_t    cy:1;
-    uint8_t    ac:1;
-    uint8_t    pad:3;
-} ConditionCodes;
-
-// Space invaders I/O ports
-typedef struct Ports {
-    uint8_t     read1;
-    uint8_t     read2;
-    uint8_t     shift1;
-    uint8_t     shift0;
-
-    uint8_t     write2; // shift amount (bits 0,1,2)
-    uint8_t     write4; // shift data
-} Ports;
-
-typedef struct State8080 {
-    uint8_t    a;
-    uint8_t    b;
-    uint8_t    c;
-    uint8_t    d;
-    uint8_t    e;
-    uint8_t    h;
-    uint8_t    l;
-    uint16_t   sp;
-    uint16_t   pc;
-    uint8_t    *memory;
-    struct     ConditionCodes      cc;
-	struct      Ports              port;
-    uint8_t    int_enable;
-} State8080;
+#include "main.h"
 
 /*    
 codebuffer is a valid pointer to 8080 assembly code    
@@ -2203,6 +2169,16 @@ double timeusec() {
     return ((double)currentTime.tv_sec * 1E6) + ((double)currentTime.tv_usec);
 }
 
+static void
+activate (GtkApplication* app, gpointer user_data) {
+  GtkWidget *window;
+
+  window = gtk_application_window_new (app);
+  gtk_window_set_title (GTK_WINDOW (window), "Window");
+  gtk_window_set_default_size (GTK_WINDOW (window), 200, 200);
+  gtk_widget_show_all (window);
+}
+
 int main (int argc, char**argv) {
 
     State8080* state = init8080();
@@ -2211,6 +2187,14 @@ int main (int argc, char**argv) {
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.g", 0x800);
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.f", 0x1000);
     readFileIntoMemoryAt(state, "games/space-invaders/invaders.e", 0x1800);
+
+	GtkApplication *app;
+    int status;
+
+    app = gtk_application_new ("org.gtk.example", G_APPLICATION_FLAGS_NONE);
+    g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
+    status = g_application_run (G_APPLICATION (app), argc, argv);
+    g_object_unref (app);
 
     int done = 1;
 	double now;
