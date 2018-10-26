@@ -75,6 +75,19 @@ static void bw_to_rgb(guchar *rgb, guchar *bw, size_t sz) {
       rgb[i * BYTES_PER_PIXEL + j] = bw[i];
 }
 
+static GdkPixbuf* getPixBufFromData(guchar* rgb, int rows, int cols) {
+    GdkPixbuf *pb = gdk_pixbuf_new_from_data(
+        rgb,
+        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
+        0,                      // has_alpha (0 for no alpha)
+        8,                      // bits-per-sample (must be 8)
+        cols, rows,             // cols, rows
+        cols * BYTES_PER_PIXEL, // rowstride
+        NULL, NULL              // destroy_fn, destroy_fn_data
+    );
+    return pb;
+}
+
 gboolean
 derp (gpointer data) {
 
@@ -99,17 +112,7 @@ derp (gpointer data) {
     guchar rgb[sizeof bw * BYTES_PER_PIXEL];
     bw_to_rgb(rgb, rbw, ROWS * COLS);
 
-    GdkPixbuf *pb = gdk_pixbuf_new_from_data(
-        rgb,
-        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
-        0,                      // has_alpha (0 for no alpha)
-        8,                      // bits-per-sample (must be 8)
-        ROWS, COLS,             // cols, rows
-        ROWS * BYTES_PER_PIXEL, // rowstride
-        NULL, NULL              // destroy_fn, destroy_fn_data
-    );
-
-    gtk_image_set_from_pixbuf(w->image, pb);
+    gtk_image_set_from_pixbuf(w->image, getPixBufFromData(rgb, COLS, ROWS));
 
       /* Return true so the function will be called again; returning false removes
        * this timeout function.
@@ -126,25 +129,11 @@ start_window (GtkApplication* app, gpointer user_data) {
     w->state = state;
 
     guchar bw[ROWS * COLS] = { 0 };
-    for (int r = 0; r < ROWS; r++)
-        for (int c = 0; c < COLS; c++) {
-            bw[r * COLS + c] = w->state->memory[0x2400 + ((r * COLS) + c)] == 1 ? 255:0;
-        }
 
     guchar rgb[sizeof bw * BYTES_PER_PIXEL];
     bw_to_rgb(rgb, bw, ROWS * COLS);
 
-    GdkPixbuf *pb = gdk_pixbuf_new_from_data(
-        rgb,
-        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
-        0,                      // has_alpha (0 for no alpha)
-        8,                      // bits-per-sample (must be 8)
-        COLS, ROWS,             // cols, rows
-        COLS * BYTES_PER_PIXEL, // rowstride
-        NULL, NULL              // destroy_fn, destroy_fn_data
-    );
-
-    GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(pb);
+    GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(getPixBufFromData(rgb, ROWS, COLS));
     w->image = image;
 
     g_timeout_add(100, derp, w);
