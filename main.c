@@ -5,6 +5,7 @@
 #include <pthread.h>
 
 #include "8080emu.h"
+#include "main.h"
 
 #define COLS 256
 #define ROWS 224
@@ -74,15 +75,10 @@ static void bw_to_rgb(guchar *rgb, guchar *bw, size_t sz) {
       rgb[i * BYTES_PER_PIXEL + j] = bw[i];
 }
 
-typedef struct wrap {
-    GtkImage* image;
-    State8080* state;
-} Wrap;
-
 gboolean
 derp (gpointer data) {
 
-    Wrap* w = data;
+    DisplayStateWrapper* w = data;
     guchar bw[ROWS * COLS] = { 0 };
 
     for (int r = 0; r < ROWS; r++)
@@ -122,17 +118,16 @@ derp (gpointer data) {
 }
 
 static void
-activate (GtkApplication* app, gpointer user_data) {
-      GtkWidget *window;
-    State8080* state = user_data; // start all black
-    
-    Wrap* w = (Wrap*) malloc(sizeof(Wrap));
+start_window (GtkApplication* app, gpointer user_data) {
+    GtkWidget *window;
+    State8080* state = user_data;
+
+    DisplayStateWrapper* w = (DisplayStateWrapper*) malloc(sizeof(DisplayStateWrapper));
     w->state = state;
 
     guchar bw[ROWS * COLS] = { 0 };
     for (int r = 0; r < ROWS; r++)
         for (int c = 0; c < COLS; c++) {
-            //bw[r * COLS + c] = state->memory[0x2400 + (r * COLS + c)];
             bw[r * COLS + c] = w->state->memory[0x2400 + ((r * COLS) + c)] == 1 ? 255:0;
         }
 
@@ -178,7 +173,7 @@ int main (int argc, char**argv) {
     int status;
 
     app = gtk_application_new ("org.gtk.example", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect (app, "activate", G_CALLBACK (activate), state);
+    g_signal_connect (app, "activate", G_CALLBACK (start_window), state);
     status = g_application_run (G_APPLICATION (app), argc, argv);
     g_object_unref (app);
 

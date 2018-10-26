@@ -1,5 +1,8 @@
 #include <inttypes.h>
 
+#ifndef EMU_H
+#define EMU_H
+
 typedef struct ConditionCodes {
     uint8_t    z:1;
     uint8_t    s:1;
@@ -39,3 +42,5 @@ typedef struct State8080 {
 int disassemble8080Op(unsigned char *code, int pc);
 int emulate8080(State8080* state);
 void generateInterrupt(State8080 *state, int interrupt_num);
+
+#endif
