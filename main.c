@@ -99,7 +99,6 @@ derp (gpointer data) {
             for (int k = 0; k < 8; ++k) {
                 bw[(r * COLS + j) + k + (j * 8)] = (w->state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
             }
-            // bw[r * COLS + c] = rand() %2 ? 0: 255;
         }
 
     guchar rbw[ROWS * COLS] = {0};

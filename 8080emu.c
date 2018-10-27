@@ -542,6 +542,10 @@ int emulate8080(State8080* state) {
             state->cc.cy = ((x & 1) == 1);
             break;
         }
+        case 0x20:
+        {
+            break;
+        }
         case 0x21: // LXI H, word
             state->l = opcode[1];
             state->h = opcode[2];
@@ -580,6 +584,13 @@ int emulate8080(State8080* state) {
             state->cc.cy = (pairHL > 0xff);
             state->h = (pairHL & 0xff00) >> 8;
             state->l = pairHL & 0xff;
+            break;
+        }
+        case 0x2A: //LHLD addr
+        {
+            uint16_t adr = (opcode[2] << 8) | (opcode[1]);
+            state->l = state->memory[adr];
+            state->h = state->memory[adr+1];
             break;
         }
         case 0x2B: // DCX H
@@ -2111,6 +2122,7 @@ int emulate8080(State8080* state) {
             break;
         }
         default:
+            printf("%x\n", *opcode);
             unimplementedInstruction(state);
             break;
     }
