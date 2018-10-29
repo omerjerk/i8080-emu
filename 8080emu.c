@@ -551,6 +551,14 @@ int emulate8080(State8080* state) {
             state->h = opcode[2];
             state->pc += 2; // Advance 2 more bytes
             break;
+        case 0x22: // SHLD adr
+        {
+            uint16_t adr = (opcode[2] << 8) | (opcode[1]);
+            state->memory[adr] = state->l;
+            state->memory[adr+1] = state->h;
+            state->pc += 2;
+            break;
+        }          
         case 0x23: // INX H
         {
             uint16_t pair = (state->h << 8) | (state->l);
