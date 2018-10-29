@@ -591,6 +591,7 @@ int emulate8080(State8080* state) {
             uint16_t adr = (opcode[2] << 8) | (opcode[1]);
             state->l = state->memory[adr];
             state->h = state->memory[adr+1];
+            state->pc += 2;
             break;
         }
         case 0x2B: // DCX H
@@ -670,6 +671,8 @@ int emulate8080(State8080* state) {
         }
         case 0x37: // STC
             state->cc.cy = 1;
+            break;
+        case 0x38:
             break;
         case 0x39: // DAD SP
         {
