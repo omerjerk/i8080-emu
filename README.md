@@ -18,4 +18,4 @@ make
 ## Screenshots
 This is how the display looks as of now:
 
-![alt text](https://raw.githubusercontent.com/omerjerk/hello-8080/master/screenshots/demo.png)
+![alt text](https://raw.githubusercontent.com/omerjerk/hello-8080/master/screenshots/demo.gif)
