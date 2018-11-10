@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <gtk/gtk.h>
 #include <pthread.h>
+#include <gtk/gtk.h>
+#include <epoxy/gl.h>
 
 #include "8080emu.h"
 #include "main.h"
@@ -119,6 +120,27 @@ derp (gpointer data) {
       return TRUE;
 }
 
+static gboolean
+render (GtkGLArea *area, GdkGLContext *context)
+{
+  // inside this function it's safe to use GL; the given
+  // #GdkGLContext has been made current to the drawable
+  // surface used by the #GtkGLArea and the viewport has
+  // already been set to be the size of the allocation
+
+  // we can start by clearing the buffer
+  glClearColor (0, 0, 0, 0);
+  glClear (GL_COLOR_BUFFER_BIT);
+
+  // draw your object
+//   draw_an_object ();
+
+  // we completed our drawing; the draw commands will be
+  // flushed at the end of the signal emission chain, and
+  // the buffers will be drawn on the window
+  return TRUE;
+}
+
 static void
 start_window (GtkApplication* app, gpointer user_data) {
     GtkWidget *window;
@@ -132,15 +154,16 @@ start_window (GtkApplication* app, gpointer user_data) {
     guchar rgb[sizeof bw * BYTES_PER_PIXEL];
     bw_to_rgb(rgb, bw, ROWS * COLS);
 
-    GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(getPixBufFromData(rgb, ROWS, COLS));
-    w->image = image;
+    // GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(getPixBufFromData(rgb, ROWS, COLS));
+    // w->image = image;
+    GtkWidget *gl_area = gtk_gl_area_new ();
 
-    g_timeout_add(100, derp, w);
+    // g_timeout_add(100, derp, w);
 
     window = gtk_application_window_new (app);
     gtk_window_set_title (GTK_WINDOW (window), "Window");
     gtk_window_set_default_size (GTK_WINDOW (window), 256, 224);
-    gtk_container_add(GTK_CONTAINER(window), (GtkWidget*) image);
+    gtk_container_add(GTK_CONTAINER(window), (GtkWidget*) gl_area);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all (window);
 }

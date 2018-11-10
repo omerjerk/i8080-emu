@@ -4,6 +4,7 @@ A primitive intel 8080 emulator written in C. GTK+ is used as the windowing syst
 ## Dependencies
 ```
 sudo apt-get install libgtk-3-dev
+sudo apt-get install freeglut3-dev
 ```
 
 ## Build
