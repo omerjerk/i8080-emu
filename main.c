@@ -8,8 +8,6 @@
 #include "8080emu.h"
 #include "main.h"
 
-#define COLS 256
-#define ROWS 224
 #define BYTES_PER_PIXEL 3
 
 void readFileIntoMemoryAt(State8080* state, char* filename, uint32_t offset) {
@@ -93,16 +91,17 @@ static void
 initGL(GtkWidget* glArea, gpointer data) {
     DisplayStateWrapper* w = data;
 
+    glClearColor (1.0f, 0, 0, 0);
+    glClear (GL_COLOR_BUFFER_BIT);
+
     GLuint textureID;
     glGenTextures(1, &textureID);
 
     // "Bind" the newly created texture : all future texture functions will modify this texture
     glBindTexture(GL_TEXTURE_2D, textureID);
 
-    char img[ROWS*COLS] = {0};
-
     // Give the image to OpenGL
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, COLS, ROWS, 0, GL_BGR, GL_UNSIGNED_BYTE, img);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, COLS, ROWS, 0, GL_BGR, GL_UNSIGNED_BYTE, w->img);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -120,17 +119,14 @@ render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
     State8080* state = w->state;
 
     // we can start by clearing the buffer
-    glClearColor (0, 0, 0, 0);
+    glClearColor (1.0f, 0, 0, 0);
     glClear (GL_COLOR_BUFFER_BIT);
-
-    //TODO: move this to DisplayStateWrapper probably
-    char img[ROWS*COLS];
 
     // draw your object
     for (int r = 0; r < ROWS; r++) {
         for (int j = 0; j < 32; j++) {
             for (int k = 0; k < 8; ++k) {
-                img[(r * COLS + j) + k + (j * 8)] = (state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
+                w->img[(r * COLS + j) + k + (j * 8)] = (state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
             }
         }
     }
