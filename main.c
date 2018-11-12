@@ -6,6 +6,7 @@
 #include <epoxy/gl.h>
 
 #include "8080emu.h"
+#include "shader.h"
 #include "main.h"
 
 #define BYTES_PER_PIXEL 3
@@ -71,6 +72,11 @@ void* emulatorThreadFun(void* arg) {
 static void
 initGL(GtkWidget* glArea, gpointer data) {
     DisplayStateWrapper* w = data;
+
+    gtk_gl_area_make_current (GTK_GL_AREA (glArea));
+
+    // Create and compile our GLSL program from the shaders
+	GLuint programID = loadShaders("vertex_shader.glsl", "fragment_shader.glsl");
 
     GLuint textureID;
     glGenTextures(1, &textureID);

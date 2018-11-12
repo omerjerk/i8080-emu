@@ -5,16 +5,17 @@
 #include "shader.h"
 
 /* copy a shader from a plain text file into a character array */
-static bool parseFileIntoStr(const char *fileName, char *shader_str, int max_len) {
+static bool parseFileIntoStr(const char *fileName, char **shader_str) {
     FILE *file = fopen(fileName, "r" );
     if (!file) {
         printf( "ERROR: opening file for reading: %s\n", fileName );
         return false;
     }
-    size_t cnt = fread(shader_str, 1, max_len - 1, file);
-    if ((int)cnt >= max_len - 1) {
-        printf( "WARNING: file %s too big - truncated.\n", fileName );
-    }
+    fseek(file, 0L, SEEK_END);
+    int fsize = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+    *shader_str = malloc(fsize);
+    size_t cnt = fread(*shader_str, fsize, 1, file);
     if (ferror(file)) {
         printf("ERROR: reading shader file %s\n", fileName);
         fclose(file);
@@ -33,16 +34,20 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
     GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
     // Read the Vertex Shader code from the file
-    char* vertexShaderCode;
-    if (!parseFileIntoStr(vertexFilePath, vertexShaderCode, 100000000)) {
+    const char* vertexShaderCode;
+    char* tempVShader;
+    if (!parseFileIntoStr(vertexFilePath, &tempVShader)) {
         return 0;
     }
+    vertexShaderCode = tempVShader;
 
     // Read the Fragment Shader code from the file
-    char* fragmentShaderCode;
-    if(!parseFileIntoStr(fragmentFilePath, fragmentShaderCode, 100000000)){
+    const char* fragmentShaderCode;
+    char* tempFShader;
+    if(!parseFileIntoStr(fragmentFilePath, &tempFShader)){
         return 0;
     }
+    fragmentShaderCode = tempFShader;
 
     GLint Result = GL_FALSE;
     int InfoLogLength;
@@ -50,7 +55,7 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
 
     // Compile Vertex Shader
     printf("Compiling shader : %s\n", vertexFilePath);
-    glShaderSource(VertexShaderID, 1, vertexShaderCode , NULL);
+    glShaderSource(VertexShaderID, 1, &vertexShaderCode , NULL);
     glCompileShader(VertexShaderID);
 
     // Check Vertex Shader
@@ -66,7 +71,7 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
 
     // Compile Fragment Shader
     printf("Compiling shader : %s\n", fragmentFilePath);
-    glShaderSource(FragmentShaderID, 1, fragmentShaderCode , NULL);
+    glShaderSource(FragmentShaderID, 1, &fragmentShaderCode , NULL);
     glCompileShader(FragmentShaderID);
 
     // Check Fragment Shader
