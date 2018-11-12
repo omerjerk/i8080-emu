@@ -22,7 +22,7 @@ static bool parseFileIntoStr(const char *fileName, char **shader_str) {
         return false;
     }
     // append \0 to end of file string
-    shader_str[cnt] = 0;
+    (*shader_str)[fsize] = '\0';
     fclose(file);
     return true;
 }
@@ -67,8 +67,6 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
         printf("%s\n", &VertexShaderErrorMessage[0]);
     }
 
-
-
     // Compile Fragment Shader
     printf("Compiling shader : %s\n", fragmentFilePath);
     glShaderSource(FragmentShaderID, 1, &fragmentShaderCode , NULL);
@@ -82,8 +80,6 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
         glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, fragmentShaderErrorMessage);
         printf("%s\n", fragmentShaderErrorMessage);
     }
-
-
 
     // Link the program
     printf("Linking program\n");
@@ -101,7 +97,6 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
         printf("%s\n", &programErrorMessage[0]);
     }
 
-    
     glDetachShader(ProgramID, VertexShaderID);
     glDetachShader(ProgramID, FragmentShaderID);
     

@@ -76,7 +76,7 @@ initGL(GtkWidget* glArea, gpointer data) {
     gtk_gl_area_make_current (GTK_GL_AREA (glArea));
 
     // Create and compile our GLSL program from the shaders
-	GLuint programID = loadShaders("vertex_shader.glsl", "fragment_shader.glsl");
+    GLuint programID = loadShaders("vertex_shader.glsl", "fragment_shader.glsl");
 
     GLuint textureID;
     glGenTextures(1, &textureID);
