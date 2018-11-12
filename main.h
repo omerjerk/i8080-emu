@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+#include <epoxy/gl.h>
 
 #include "8080emu.h"
 
@@ -6,8 +7,8 @@
 #define MAIN_H
 
 typedef struct _DisplayStateWrapper {
-    GtkImage* image;
     State8080* state;
+    GLuint texId;
 } DisplayStateWrapper;
 
 #endif

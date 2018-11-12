@@ -89,61 +89,61 @@ static GdkPixbuf* getPixBufFromData(guchar* rgb, int rows, int cols) {
     return pb;
 }
 
-gboolean
-derp (gpointer data) {
-
+static void
+initGL(GtkWidget* glArea, gpointer data) {
     DisplayStateWrapper* w = data;
-    guchar bw[ROWS * COLS] = { 0 };
 
-    for (int r = 0; r < ROWS; r++)
-        for (int j = 0; j < 32; j++) {
-            for (int k = 0; k < 8; ++k) {
-                bw[(r * COLS + j) + k + (j * 8)] = (w->state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
-            }
-        }
+    GLuint textureID;
+    glGenTextures(1, &textureID);
 
-    guchar rbw[ROWS * COLS] = {0};
-    for (int i = 0; i < COLS; ++i) {
-        for (int j = 0; j < ROWS; ++j) {
-            rbw[(i * ROWS) + j] = bw[(j * COLS) + (ROWS - i)];
-        }
-    }
+    // "Bind" the newly created texture : all future texture functions will modify this texture
+    glBindTexture(GL_TEXTURE_2D, textureID);
 
-    guchar rgb[sizeof bw * BYTES_PER_PIXEL];
-    bw_to_rgb(rgb, rbw, ROWS * COLS);
+    char img[ROWS*COLS] = {0};
 
-    gtk_image_set_from_pixbuf(w->image, getPixBufFromData(rgb, COLS, ROWS));
+    // Give the image to OpenGL
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, COLS, ROWS, 0, GL_BGR, GL_UNSIGNED_BYTE, img);
 
-      /* Return true so the function will be called again; returning false removes
-       * this timeout function.
-       */
-      return TRUE;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    w->texId = textureID;
 }
 
 static gboolean
-render (GtkGLArea *area, GdkGLContext *context)
-{
-  // inside this function it's safe to use GL; the given
-  // #GdkGLContext has been made current to the drawable
-  // surface used by the #GtkGLArea and the viewport has
-  // already been set to be the size of the allocation
+render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
+    // inside this function it's safe to use GL; the given
+    // #GdkGLContext has been made current to the drawable
+    // surface used by the #GtkGLArea and the viewport has
+    // already been set to be the size of the allocation
+    DisplayStateWrapper* w = data;
+    State8080* state = w->state;
 
-  // we can start by clearing the buffer
-  glClearColor (0, 0, 0, 0);
-  glClear (GL_COLOR_BUFFER_BIT);
+    // we can start by clearing the buffer
+    glClearColor (0, 0, 0, 0);
+    glClear (GL_COLOR_BUFFER_BIT);
 
-  // draw your object
-//   draw_an_object ();
+    //TODO: move this to DisplayStateWrapper probably
+    char img[ROWS*COLS];
 
-  // we completed our drawing; the draw commands will be
-  // flushed at the end of the signal emission chain, and
-  // the buffers will be drawn on the window
-  return TRUE;
+    // draw your object
+    for (int r = 0; r < ROWS; r++) {
+        for (int j = 0; j < 32; j++) {
+            for (int k = 0; k < 8; ++k) {
+                img[(r * COLS + j) + k + (j * 8)] = (state->memory[0x2400 + r * 32 + j] & (1 << k)) == 0? 0 : 255;
+            }
+        }
+    }
+
+    // we completed our drawing; the draw commands will be
+    // flushed at the end of the signal emission chain, and
+    // the buffers will be drawn on the window
+    return TRUE;
 }
 
 static void
 start_window (GtkApplication* app, gpointer user_data) {
-    GtkWidget *window;
+    GtkWidget* window;
     State8080* state = user_data;
 
     DisplayStateWrapper* w = (DisplayStateWrapper*) malloc(sizeof(DisplayStateWrapper));
@@ -154,16 +154,16 @@ start_window (GtkApplication* app, gpointer user_data) {
     guchar rgb[sizeof bw * BYTES_PER_PIXEL];
     bw_to_rgb(rgb, bw, ROWS * COLS);
 
-    // GtkImage *image = (GtkImage*) gtk_image_new_from_pixbuf(getPixBufFromData(rgb, ROWS, COLS));
-    // w->image = image;
-    GtkWidget *gl_area = gtk_gl_area_new ();
+    GtkWidget* gl_area = gtk_gl_area_new ();
+    g_signal_connect (gl_area, "realize", G_CALLBACK (initGL), w);
+    g_signal_connect (gl_area, "render", G_CALLBACK (render), w);
 
     // g_timeout_add(100, derp, w);
 
     window = gtk_application_window_new (app);
     gtk_window_set_title (GTK_WINDOW (window), "Window");
     gtk_window_set_default_size (GTK_WINDOW (window), 256, 224);
-    gtk_container_add(GTK_CONTAINER(window), (GtkWidget*) gl_area);
+    gtk_container_add(GTK_CONTAINER(window), gl_area);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all (window);
 }
