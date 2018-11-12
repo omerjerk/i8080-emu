@@ -68,31 +68,9 @@ void* emulatorThreadFun(void* arg) {
     }
 }
 
-static void bw_to_rgb(guchar *rgb, guchar *bw, size_t sz) {
-  for (size_t i = 0; i < sz; i++)
-    for (size_t j = 0; j < BYTES_PER_PIXEL; j++)
-      rgb[i * BYTES_PER_PIXEL + j] = bw[i];
-}
-
-static GdkPixbuf* getPixBufFromData(guchar* rgb, int rows, int cols) {
-    GdkPixbuf *pb = gdk_pixbuf_new_from_data(
-        rgb,
-        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
-        0,                      // has_alpha (0 for no alpha)
-        8,                      // bits-per-sample (must be 8)
-        cols, rows,             // cols, rows
-        cols * BYTES_PER_PIXEL, // rowstride
-        NULL, NULL              // destroy_fn, destroy_fn_data
-    );
-    return pb;
-}
-
 static void
 initGL(GtkWidget* glArea, gpointer data) {
     DisplayStateWrapper* w = data;
-
-    glClearColor (1.0f, 0, 0, 0);
-    glClear (GL_COLOR_BUFFER_BIT);
 
     GLuint textureID;
     glGenTextures(1, &textureID);
@@ -101,7 +79,7 @@ initGL(GtkWidget* glArea, gpointer data) {
     glBindTexture(GL_TEXTURE_2D, textureID);
 
     // Give the image to OpenGL
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, COLS, ROWS, 0, GL_BGR, GL_UNSIGNED_BYTE, w->img);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, COLS, ROWS, 0, GL_RGB, GL_UNSIGNED_BYTE, w->img);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -131,6 +109,9 @@ render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
         }
     }
 
+    glBindTexture(GL_TEXTURE_2D, w->texId);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, COLS, ROWS, GL_RGB, GL_UNSIGNED_BYTE, w->img);
+
     // we completed our drawing; the draw commands will be
     // flushed at the end of the signal emission chain, and
     // the buffers will be drawn on the window
@@ -144,11 +125,6 @@ start_window (GtkApplication* app, gpointer user_data) {
 
     DisplayStateWrapper* w = (DisplayStateWrapper*) malloc(sizeof(DisplayStateWrapper));
     w->state = state;
-
-    guchar bw[ROWS * COLS] = { 0 };
-
-    guchar rgb[sizeof bw * BYTES_PER_PIXEL];
-    bw_to_rgb(rgb, bw, ROWS * COLS);
 
     GtkWidget* gl_area = gtk_gl_area_new ();
     g_signal_connect (gl_area, "realize", G_CALLBACK (initGL), w);
