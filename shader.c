@@ -75,7 +75,7 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
     // Check Fragment Shader
     glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
     glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-    if (InfoLogLength > 0 ){
+    if (InfoLogLength > 0 ) {
         char fragmentShaderErrorMessage[InfoLogLength+1];
         glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, fragmentShaderErrorMessage);
         printf("%s\n", fragmentShaderErrorMessage);
@@ -91,7 +91,7 @@ GLuint loadShaders(const char* vertexFilePath, const char* fragmentFilePath) {
     // Check the program
     glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
     glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-    if (InfoLogLength > 0){
+    if (InfoLogLength > 0) {
         char programErrorMessage[InfoLogLength+1];
         glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, programErrorMessage);
         printf("%s\n", &programErrorMessage[0]);

@@ -75,8 +75,12 @@ initGL(GtkWidget* glArea, gpointer data) {
 
     gtk_gl_area_make_current (GTK_GL_AREA (glArea));
 
+    GLuint vertexArrayId;
+	glGenVertexArrays(1, &vertexArrayId);
+	glBindVertexArray(vertexArrayId);
+
     // Create and compile our GLSL program from the shaders
-    GLuint programID = loadShaders("vertex_shader.glsl", "fragment_shader.glsl");
+    w->programId = loadShaders("vertex_shader.glsl", "fragment_shader.glsl");
 
     GLuint textureID;
     glGenTextures(1, &textureID);
@@ -89,6 +93,21 @@ initGL(GtkWidget* glArea, gpointer data) {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    float vertices[] = {
+        // positions         // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+       -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
+       -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
+    };
+
+	// Generate 1 buffer, put the resulting identifier in vertexbuffer
+	glGenBuffers(1, &w->vertexBuffer);
+	// The following commands will talk about our 'vertexbuffer' buffer
+	glBindBuffer(GL_ARRAY_BUFFER, w->vertexBuffer);
+	// Give our vertices to OpenGL.
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     w->texId = textureID;
 }
@@ -117,6 +136,15 @@ render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
 
     glBindTexture(GL_TEXTURE_2D, w->texId);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, COLS, ROWS, GL_RGB, GL_UNSIGNED_BYTE, w->img);
+
+    glBindBuffer(GL_ARRAY_BUFFER, w->vertexbuffer);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    //TODO: draw the rectangles
 
     // we completed our drawing; the draw commands will be
     // flushed at the end of the signal emission chain, and
