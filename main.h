@@ -14,6 +14,8 @@ typedef struct _DisplayStateWrapper {
     GLuint texId;
     GLuint programId;
     GLuint vertexBuffer;
+    GLuint elementBufer;
+    GLuint vertexArrayId;
     char img[ROWS*COLS];
 } DisplayStateWrapper;
 

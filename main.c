@@ -75,18 +75,17 @@ initGL(GtkWidget* glArea, gpointer data) {
 
     gtk_gl_area_make_current (GTK_GL_AREA (glArea));
 
-    GLuint vertexArrayId;
-	glGenVertexArrays(1, &vertexArrayId);
-	glBindVertexArray(vertexArrayId);
+	glGenVertexArrays(1, &w->vertexArrayId);
+	glBindVertexArray(w->vertexArrayId);
 
     // Create and compile our GLSL program from the shaders
     w->programId = loadShaders("vertex_shader.glsl", "fragment_shader.glsl");
 
-    GLuint textureID;
-    glGenTextures(1, &textureID);
+    GLuint textureId;
+    glGenTextures(1, &textureId);
 
     // "Bind" the newly created texture : all future texture functions will modify this texture
-    glBindTexture(GL_TEXTURE_2D, textureID);
+    glBindTexture(GL_TEXTURE_2D, textureId);
 
     // Give the image to OpenGL
     glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, COLS, ROWS, 0, GL_RGB, GL_UNSIGNED_BYTE, w->img);
@@ -102,14 +101,28 @@ initGL(GtkWidget* glArea, gpointer data) {
        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
     };
 
+    unsigned int indices[] = {  // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };
+
 	// Generate 1 buffer, put the resulting identifier in vertexbuffer
 	glGenBuffers(1, &w->vertexBuffer);
 	// The following commands will talk about our 'vertexbuffer' buffer
 	glBindBuffer(GL_ARRAY_BUFFER, w->vertexBuffer);
 	// Give our vertices to OpenGL.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
-    w->texId = textureID;
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glGenBuffers(1, &w->elementBufer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, w->elementBufer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    w->texId = textureId;
 }
 
 static gboolean
@@ -123,7 +136,8 @@ render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
 
     // we can start by clearing the buffer
     glClearColor (1.0f, 0, 0, 0);
-    glClear (GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(w->programId);
 
     // draw your object
     for (int r = 0; r < ROWS; r++) {
@@ -137,14 +151,8 @@ render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
     glBindTexture(GL_TEXTURE_2D, w->texId);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, COLS, ROWS, GL_RGB, GL_UNSIGNED_BYTE, w->img);
 
-    glBindBuffer(GL_ARRAY_BUFFER, w->vertexbuffer);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    //TODO: draw the rectangles
+    glBindVertexArray(w->vertexArrayId);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // we completed our drawing; the draw commands will be
     // flushed at the end of the signal emission chain, and
