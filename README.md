@@ -1,5 +1,5 @@
 # Intel 8080 Emulator
-A primitive intel 8080 emulator written in C. GTK+ is used as the windowing system.
+A primitive intel 8080 emulator written in C. I have used GTK+ as the windowing system and OpenGL to render the graphics.
 
 ## Dependencies
 ```
