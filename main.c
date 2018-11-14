@@ -161,6 +161,12 @@ render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
     return TRUE;
 }
 
+gboolean
+force_render (gpointer data) {
+    gtk_gl_area_queue_render((GtkGLArea*) data);
+    return GL_TRUE;
+}
+
 static void
 start_window (GtkApplication* app, gpointer user_data) {
     GtkWidget* window;
@@ -170,10 +176,11 @@ start_window (GtkApplication* app, gpointer user_data) {
     w->state = state;
 
     GtkWidget* gl_area = gtk_gl_area_new ();
+    gtk_gl_area_set_auto_render((GtkGLArea*) gl_area, GL_FALSE);
     g_signal_connect (gl_area, "realize", G_CALLBACK (initGL), w);
     g_signal_connect (gl_area, "render", G_CALLBACK (render), w);
 
-    // g_timeout_add(100, derp, w);
+    g_timeout_add(100, force_render, gl_area);
 
     window = gtk_application_window_new (app);
     gtk_window_set_title (GTK_WINDOW (window), "Window");
