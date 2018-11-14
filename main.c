@@ -149,7 +149,7 @@ render (GtkGLArea* area, GdkGLContext* context, gpointer data) {
     }
 
     glBindTexture(GL_TEXTURE_2D, w->texId);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, COLS, ROWS, GL_RGB, GL_UNSIGNED_BYTE, w->img);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, COLS, ROWS, GL_LUMINANCE, GL_UNSIGNED_BYTE, w->img);
 
     glBindVertexArray(w->vertexArrayId);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, w->elementBufer);
