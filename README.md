@@ -1,10 +1,11 @@
 # Intel 8080 Emulator
-An Intel 8080 emulator written in C. I have used GTK+ as the windowing system and OpenGL to render the graphics.
+An Intel 8080 emulator written in C. I built this mainly to understand the working of a CPU, assembly code and some OpenGL.
 
 ## Features:
 * Wrote a *mostly complete* interpreter to execute 8080's instruction codes to modify the CPU state.
 * Using OpenGL to render the graphics so that rendering is completely offloaded to the GPU.
-* Written in pure C.
+* Window can be resized in any way, thanks to the OpenGL implementation.
+* Used GTK+ as the windowing system (Not really a feature though).
 
 ## Dependencies
 ```
@@ -22,6 +23,5 @@ make
 ./8080
 ```
 ## Screenshots
-This is how the display looks as of now:
 
 ![alt text](https://raw.githubusercontent.com/omerjerk/hello-8080/master/screenshots/demo.gif)
