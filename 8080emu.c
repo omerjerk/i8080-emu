@@ -606,7 +606,7 @@ int emulate8080(State8080* state) {
         {
             uint16_t pair = (state->h << 8) | (state->l);
             pair = pair - 1;
-            state->b = (pair & 0xff00) >> 8;
+            state->h = (pair & 0xff00) >> 8;
             state->l = pair & 0xff;
             break;
         }
@@ -1172,7 +1172,7 @@ int emulate8080(State8080* state) {
             state->cc.s = ((answer & 0x80) == 0x80);
             state->cc.cy = (answer > 0xff);
             state->cc.p = parity(answer & 0xff, 8);
-            state->cc.ac = (((state->a & 0xf) + (-(state->c) & 0xf)) > 0xf);
+            state->cc.ac = (((state->a & 0xf) + (-(state->b) & 0xf)) > 0xf);
             state->a = answer & 0xff;
             break;
         }
